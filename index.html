@@ -101,10 +101,18 @@
 
 
       } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+        // Desktop style: fill the whole browser client area with the game canvas:
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
 
-        canvas.style.width = "1920px";
-        canvas.style.height = "1080px";
+        // resizing canvas
+        function resizeCanvas() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("load", resizeCanvas);
       }
 
       loadingBar.style.display = "block";
