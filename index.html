@@ -128,69 +128,69 @@
 
       const TARGET_ASPECT = 16 / 9;
 
-      function getAccurateViewport() {
+      function getViewport() {
         return {
           width: Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
           height: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
         };
       }
 
+      function isMobileDevice() {
+        return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      }
+
       function resizeCanvas() {
         const canvas = document.getElementById("unity-canvas");
-        const viewport = getAccurateViewport();
+        const viewport = getViewport();
 
         const windowAspect = viewport.width / viewport.height;
         let newWidth, newHeight;
 
         if (windowAspect > TARGET_ASPECT) {
-          // 화면이 더 넓을 때: pillarbox
           newHeight = viewport.height;
           newWidth = newHeight * TARGET_ASPECT;
         } else {
-          // 화면이 더 좁을 때: letterbox
           newWidth = viewport.width;
           newHeight = newWidth / TARGET_ASPECT;
         }
 
-        // DOM 크기 설정
+        // Apply canvas style
         canvas.style.width = `${newWidth}px`;
         canvas.style.height = `${newHeight}px`;
-
-        // 렌더 타겟 크기 설정
         canvas.width = newWidth;
         canvas.height = newHeight;
 
-        // 정중앙 위치 조정
-        canvas.style.position = "absolute";
-        canvas.style.left = `${(viewport.width - newWidth) / 2}px`;
-        canvas.style.top = `${(viewport.height - newHeight) / 2}px`;
-        canvas.style.margin = "0";
-        canvas.style.display = "block";
-      }
-
-      // 반복 감지용 (주소창 닫힘 등 반영)
-      let resizeObserver = null;
-      function startResizeMonitor() {
-        resizeCanvas(); // 초기 적용
-
-        // 리사이즈, 회전, 주소창 닫힘 등 다양한 상황 대응
-        window.addEventListener("resize", resizeCanvas);
-        window.addEventListener("orientationchange", () => {
-          setTimeout(resizeCanvas, 500); // 회전 후 지연 적용
-        });
-
-        // ResizeObserver를 통한 정확한 감지 (iOS 등)
-        if ("ResizeObserver" in window) {
-          const ro = new ResizeObserver(() => resizeCanvas());
-          ro.observe(document.body);
-          resizeObserver = ro;
+        // Position adjustment (only for PC, mobile can be fullscreen)
+        if (!isMobileDevice()) {
+          canvas.style.position = "absolute";
+          canvas.style.left = `${(viewport.width - newWidth) / 2}px`;
+          canvas.style.top = `${(viewport.height - newHeight) / 2}px`;
+          canvas.style.margin = "0";
+          canvas.style.display = "block";
         } else {
-          // fallback: 폴링
-          setInterval(resizeCanvas, 1000); // 1초마다 체크
+          // On mobile, just fill the screen
+          canvas.style.position = "absolute";
+          canvas.style.left = "0px";
+          canvas.style.top = "0px";
         }
       }
 
-      // 로드 시 시작
+      function startResizeMonitor() {
+        resizeCanvas();
+
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("orientationchange", () => {
+          setTimeout(resizeCanvas, 500);
+        });
+
+        if ("ResizeObserver" in window) {
+          const ro = new ResizeObserver(() => resizeCanvas());
+          ro.observe(document.body);
+        } else {
+          setInterval(resizeCanvas, 1000);
+        }
+      }
+
       window.addEventListener("load", startResizeMonitor);
 
     </script>
