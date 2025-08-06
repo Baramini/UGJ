@@ -129,7 +129,6 @@
       const TARGET_ASPECT = 16 / 9;
 
       function getAccurateViewport() {
-        // iOS 대응: 안전한 화면 크기를 추정
         return {
           width: Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
           height: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
@@ -144,22 +143,24 @@
         let newWidth, newHeight;
 
         if (windowAspect > TARGET_ASPECT) {
+          // 화면이 더 넓을 때: pillarbox
           newHeight = viewport.height;
           newWidth = newHeight * TARGET_ASPECT;
         } else {
+          // 화면이 더 좁을 때: letterbox
           newWidth = viewport.width;
           newHeight = newWidth / TARGET_ASPECT;
         }
 
-        // DOM 크기
+        // DOM 크기 설정
         canvas.style.width = `${newWidth}px`;
         canvas.style.height = `${newHeight}px`;
 
-        // 렌더 타겟 크기
+        // 렌더 타겟 크기 설정
         canvas.width = newWidth;
         canvas.height = newHeight;
 
-        // 정중앙 배치
+        // 정중앙 위치 조정
         canvas.style.position = "absolute";
         canvas.style.left = `${(viewport.width - newWidth) / 2}px`;
         canvas.style.top = `${(viewport.height - newHeight) / 2}px`;
@@ -167,11 +168,30 @@
         canvas.style.display = "block";
       }
 
-      window.addEventListener("resize", resizeCanvas);
-      window.addEventListener("orientationchange", () => {
-        setTimeout(resizeCanvas, 500); // 회전 후 여유 시간 줌
-      });
-      window.addEventListener("load", resizeCanvas);
+      // 반복 감지용 (주소창 닫힘 등 반영)
+      let resizeObserver = null;
+      function startResizeMonitor() {
+        resizeCanvas(); // 초기 적용
+
+        // 리사이즈, 회전, 주소창 닫힘 등 다양한 상황 대응
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("orientationchange", () => {
+          setTimeout(resizeCanvas, 500); // 회전 후 지연 적용
+        });
+
+        // ResizeObserver를 통한 정확한 감지 (iOS 등)
+        if ("ResizeObserver" in window) {
+          const ro = new ResizeObserver(() => resizeCanvas());
+          ro.observe(document.body);
+          resizeObserver = ro;
+        } else {
+          // fallback: 폴링
+          setInterval(resizeCanvas, 1000); // 1초마다 체크
+        }
+      }
+
+      // 로드 시 시작
+      window.addEventListener("load", startResizeMonitor);
 
     </script>
   </body>
