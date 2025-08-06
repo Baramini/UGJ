@@ -86,21 +86,20 @@
       // expected to change.
 
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
+
         var meta = document.createElement('meta');
         meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, viewport-fit=cover';
         document.getElementsByTagName('head')[0].appendChild(meta);
-
         container.className = "unity-mobile";
         canvas.className = "unity-mobile";
 
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
+        // To lower canvas resolution on mobile devices to gain some
+        // performance, uncomment the following line:
+        // config.devicePixelRatio = 1;
 
-        function resizeCanvas() {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        }
+
       } else {
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
 
@@ -126,6 +125,53 @@
             };
 
       document.body.appendChild(script);
+
+      const TARGET_ASPECT = 16 / 9;
+
+      function getAccurateViewport() {
+        // iOS 대응: 안전한 화면 크기를 추정
+        return {
+          width: Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
+          height: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
+        };
+      }
+
+      function resizeCanvas() {
+        const canvas = document.getElementById("unity-canvas");
+        const viewport = getAccurateViewport();
+
+        const windowAspect = viewport.width / viewport.height;
+        let newWidth, newHeight;
+
+        if (windowAspect > TARGET_ASPECT) {
+          newHeight = viewport.height;
+          newWidth = newHeight * TARGET_ASPECT;
+        } else {
+          newWidth = viewport.width;
+          newHeight = newWidth / TARGET_ASPECT;
+        }
+
+        // DOM 크기
+        canvas.style.width = `${newWidth}px`;
+        canvas.style.height = `${newHeight}px`;
+
+        // 렌더 타겟 크기
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        // 정중앙 배치
+        canvas.style.position = "absolute";
+        canvas.style.left = `${(viewport.width - newWidth) / 2}px`;
+        canvas.style.top = `${(viewport.height - newHeight) / 2}px`;
+        canvas.style.margin = "0";
+        canvas.style.display = "block";
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      window.addEventListener("orientationchange", () => {
+        setTimeout(resizeCanvas, 500); // 회전 후 여유 시간 줌
+      });
+      window.addEventListener("load", resizeCanvas);
 
     </script>
   </body>
